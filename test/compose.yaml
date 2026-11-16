@@ -1,0 +1,27 @@
+# Local test: create test/.env with CHPW and TOKEN (random strings), then `docker compose -f test/compose.yaml up --build`.
+name: signoz-railway-template
+services:
+  clickhouse:
+    build: ../clickhouse
+    environment:
+      PORT: "8123"
+      CLICKHOUSE_PASSWORD: ${CHPW}
+    volumes: [ch:/var/lib/clickhouse]
+  otel-collector:
+    build: ../otel-collector
+    environment:
+      PORT: "13133"
+      SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: tcp://signoz:${CHPW}@clickhouse:9000
+      OTLP_INGEST_TOKEN: ${TOKEN}
+      SIGNOZ_OPAMP_HOST: signoz
+    ports: ["4318", "13133"]
+  signoz:
+    build: ../signoz
+    environment:
+      PORT: "8080"
+      SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: tcp://signoz:${CHPW}@clickhouse:9000
+      SIGNOZ_GLOBAL_EXTERNAL__URL: http://localhost:42358
+      SIGNOZ_GLOBAL_INGESTION__URL: http://localhost:4318
+    volumes: [sz:/var/lib/signoz]
+    ports: ["42358:8080"]
+volumes: { ch: {}, sz: {} }

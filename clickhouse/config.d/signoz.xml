@@ -1,0 +1,75 @@
+<!-- SigNoz single-node layout: one shard, one replica, embedded Keeper.
+     Mirrors SigNoz Foundry's ClickHouse + ClickHouse Keeper config (25.12.5). -->
+<clickhouse>
+    <display_name>cluster</display_name>
+
+    <!-- Embedded ClickHouse Keeper (replaces ZooKeeper). State lives on the volume. -->
+    <keeper_server>
+        <tcp_port>9181</tcp_port>
+        <server_id>1</server_id>
+        <log_storage_path>/var/lib/clickhouse/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse/coordination/snapshots</snapshot_storage_path>
+        <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+            <raft_logs_level>warning</raft_logs_level>
+            <force_sync>false</force_sync>
+            <snapshot_distance>100000</snapshot_distance>
+            <snapshots_to_keep>3</snapshots_to_keep>
+        </coordination_settings>
+        <raft_configuration>
+            <server>
+                <id>1</id>
+                <hostname>localhost</hostname>
+                <port>9234</port>
+            </server>
+        </raft_configuration>
+    </keeper_server>
+
+    <zookeeper>
+        <node>
+            <host>localhost</host>
+            <port>9181</port>
+        </node>
+    </zookeeper>
+
+    <distributed_ddl>
+        <path>/clickhouse/task_queue/ddl</path>
+    </distributed_ddl>
+
+    <remote_servers>
+        <cluster>
+            <shard>
+                <replica>
+                    <host>localhost</host>
+                    <port>9000</port>
+                    <user from_env="CLICKHOUSE_USER"/>
+                    <password from_env="CLICKHOUSE_PASSWORD"/>
+                </replica>
+            </shard>
+        </cluster>
+    </remote_servers>
+
+    <macros>
+        <shard>01</shard>
+        <replica>01</replica>
+    </macros>
+
+    <user_scripts_path>/etc/clickhouse-server/user_scripts/</user_scripts_path>
+    <user_defined_executable_functions_config>*_function.*ml</user_defined_executable_functions_config>
+
+    <!-- Keep ClickHouse's own system logs small (SigNoz Foundry uses the same 1-day TTL). -->
+    <query_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></query_log>
+    <query_thread_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></query_thread_log>
+    <query_views_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></query_views_log>
+    <query_metric_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></query_metric_log>
+    <part_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></part_log>
+    <metric_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></metric_log>
+    <asynchronous_metric_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></asynchronous_metric_log>
+    <trace_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></trace_log>
+    <text_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></text_log>
+    <error_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></error_log>
+    <processors_profile_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></processors_profile_log>
+    <background_schedule_pool_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></background_schedule_pool_log>
+    <asynchronous_insert_log><ttl>event_date + INTERVAL 1 DAY DELETE</ttl></asynchronous_insert_log>
+</clickhouse>
